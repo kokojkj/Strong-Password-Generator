@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strong Password Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .password-display {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        #password {
+            font-size: 1.2rem;
+            font-family: monospace;
+            word-break: break-all;
+            color: #2d3748;
+        }
+
+        .copy {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .copy:hover {
+            background: #2d3748;
+        }
+
+        .settings {
+            margin-bottom: 20px;
+        }
+
+        .setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .setting label {
+            color: #4a5568;
+        }
+
+        .setting input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .setting input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .generate {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .generate:hover {
+            background: #5a67d8;
+        }
+
+        .strength-meter {
+            margin-top: 15px;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .strength-meter div {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .weak { background: #fc8181; }
+        .medium { background: #f6e05e; }
+        .strong { background: #68d391; }
+        .very-strong { background: #48bb78; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #48bb78;
+            color: white;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Strong Password Generator</h1>
+        <div class="password-display">
+            <span id="password">Click Generate to get password</span>
+            <button class="copy">Copy</button>
+        </div>
+        
+        <div class="settings">
+            <div class="setting">
+                <label>Password Length</label>
+                <input type="number" id="length" min="8" max="50" value="16">
+            </div>
+            <div class="setting">
+                <label>Include Uppercase</label>
+                <input type="checkbox" id="uppercase" checked>
+            </div>
+            <div class="setting">
+                <label>Include Lowercase</label>
+                <input type="checkbox" id="lowercase" checked>
+            </div>
+            <div class="setting">
+                <label>Include Numbers</label>
+                <input type="checkbox" id="numbers" checked>
+            </div>
+            <div class="setting">
+                <label>Include Symbols</label>
+                <input type="checkbox" id="symbols" checked>
+            </div>
+        </div>
+
+        <button class="generate">Generate Password</button>
+        
+        <div class="strength-meter">
+            <div></div>
+        </div>
+    </div>
+
+    <div class="toast">Password copied to clipboard!</div>
+
+    <script>
+        const passwordDisplay = document.getElementById('password');
+        const lengthEl = document.getElementById('length');
+        const uppercaseEl = document.getElementById('uppercase');
+        const lowercaseEl = document.getElementById('lowercase');
+        const numbersEl = document.getElementById('numbers');
+        const symbolsEl = document.getElementById('symbols');
+        const generateBtn = document.querySelector('.generate');
+        const copyBtn = document.querySelector('.copy');
+        const strengthMeter = document.querySelector('.strength-meter div');
+        const toast = document.querySelector('.toast');
+
+        const randomFunc = {
+            lower: getRandomLower,
+            upper: getRandomUpper,
+            number: getRandomNumber,
+            symbol: getRandomSymbol
+        };
+
+        function getRandomLower() {
+            return String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+        }
+
+        function getRandomUpper() {
+            return String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+        }
+
+        function getRandomNumber() {
+            return String.fromCharCode(Math.floor(Math.random() * 10) + 48);
+        }
+
+        function getRandomSymbol() {
+            const symbols = '!@#$%^&*(){}[]=<>/,.';
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+
+        function calculateStrength(password) {
+            let strength = 0;
+            const checks = {
+                length: password.length >= 12,
+                hasUpper: /[A-Z]/.test(password),
+                hasLower: /[a-z]/.test(password),
+                hasNumber: /[0-9]/.test(password),
+                hasSymbol: /[!@#$%^&*(){}[\]=<>/,.]/.test(password)
+            };
+
+            strength += Object.values(checks).filter(Boolean).length;
+
+            if (strength <= 2) return ['weak', 25];
+            if (strength === 3) return ['medium', 50];
+            if (strength === 4) return ['strong', 75];
+            return ['very-strong', 100];
+        }
+
+        function generatePassword() {
+            const length = +lengthEl.value;
+            const hasUpper = uppercaseEl.checked;
+            const hasLower = lowercaseEl.checked;
+            const hasNumber = numbersEl.checked;
+            const hasSymbol = symbolsEl.checked;
+
+            if (!hasUpper && !hasLower && !hasNumber && !hasSymbol) {
+                alert('Please select at least one option');
+                return;
+            }
+
+            let generatedPassword = '';
+            const typesCount = hasLower + hasUpper + hasNumber + hasSymbol;
+            const typesArr = [
+                { lower: hasLower },
+                { upper: hasUpper },
+                { number: hasNumber },
+                { symbol: hasSymbol }
+            ].filter(item => Object.values(item)[0]);
+
+            for (let i = 0; i < typesCount; i++) {
+                const funcName = Object.keys(typesArr[i])[0];
+                generatedPassword += randomFunc[funcName]();
+            }
+
+            for (let i = typesCount; i < length; i++) {
+                const funcName = Object.keys(typesArr[Math.floor(Math.random() * typesArr.length)])[0];
+                generatedPassword += randomFunc[funcName]();
+            }
+
+            generatedPassword = generatedPassword
+                .split('')
+                .sort(() => Math.random() - 0.5)
+                .join('');
+
+            passwordDisplay.textContent = generatedPassword;
+
+            const [strengthClass, strengthPercent] = calculateStrength(generatedPassword);
+            strengthMeter.className = strengthClass;
+            strengthMeter.style.width = `${strengthPercent}%`;
+        }
+
+        function copyToClipboard() {
+            const password = passwordDisplay.textContent;
+            if (password === 'Click Generate to create password') {
+                return;
+            }
+
+            navigator.clipboard.writeText(password).then(() => {
+                toast.style.opacity = '1';
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                }, 2000);
+            });
+        }
+
+        generateBtn.addEventListener('click', generatePassword);
+        copyBtn.addEventListener('click', copyToClipboard);
+    </script>
+</body>
+</html>
